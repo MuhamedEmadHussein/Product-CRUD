@@ -3,8 +3,8 @@
 namespace Modules\Product\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-
-class ProductDatabaseSeeder extends Seeder
+use Modules\Product\Models\Product;
+class ProductSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -12,8 +12,6 @@ class ProductDatabaseSeeder extends Seeder
     public function run(): void
     {
         // $this->call([]);
-        $this->call([
-            ProductSeeder::class,
-        ]);
+        Product::factory()->count(20)->create();
     }
 }

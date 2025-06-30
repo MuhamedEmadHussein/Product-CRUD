@@ -20,4 +20,5 @@ class Product extends Model
     // {
     //     // return ProductFactory::new();
     // }
+    
 }

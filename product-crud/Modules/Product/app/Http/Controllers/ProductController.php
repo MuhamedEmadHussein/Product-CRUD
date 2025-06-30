@@ -4,53 +4,59 @@ namespace Modules\Product\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
+use Modules\Product\App\Http\Requests\ProductRequest;
+use Modules\Product\Repositories\ProductRepository;
+use Modules\Product\Transformers\ProductResource;
+use Modules\Product\Http\Requests\ProductRequest as RequestsProductRequest;
 class ProductController extends Controller
 {
+    protected $repository;
+
+    public function __construct(ProductRepository $repository)
+    {
+        $this->repository = $repository;
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view('product::index');
+        $products = $this->repository->all();
+        return ProductResource::collection($products);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function store(RequestsProductRequest $request)
     {
-        return view('product::create');
+        $product = $this->repository->create($request->validated());
+        return new ProductResource($product);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
 
     /**
      * Show the specified resource.
      */
     public function show($id)
     {
-        return view('product::show');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('product::edit');
+        $product = $this->repository->find($id);
+        return new ProductResource($product);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id) {}
-
+    public function update(RequestsProductRequest $request, $id)
+    {
+        $product = $this->repository->update($id, $request->validated());
+        return new ProductResource($product);
+    }
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id) {}
+    public function destroy($id)
+    {
+        $this->repository->delete($id);
+        return response()->json(['message' => 'Product deleted successfully'],200);
+    }
 }
