@@ -31,7 +31,7 @@ class ProductServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
         
         // Register Livewire components
-        Livewire::component('product-list', ProductList::class);
+        Livewire::component('product::product-list', ProductList::class);
     }
 
     /**

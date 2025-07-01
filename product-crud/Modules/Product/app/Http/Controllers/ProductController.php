@@ -3,12 +3,10 @@
 namespace Modules\Product\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Modules\Product\App\Http\Requests\ProductRequest;
 use Modules\Product\Repositories\ProductRepository;
 use Modules\Product\Transformers\ProductResource;
-use Modules\Product\Http\Requests\ProductRequest as RequestsProductRequest;
+use Modules\Product\App\Http\Requests\ProductRequest;
 
 class ProductController extends Controller
 {
@@ -24,7 +22,9 @@ class ProductController extends Controller
     public function index()
     {
         try {
+            Log::info('ProductController: Retrieving all products');
             $products = $this->repository->all();
+            Log::info('Products found: ' . $products->count());
             return ProductResource::collection($products);
         } catch (\Exception $e) {
             Log::error('Error in index method: ' . $e->getMessage());
@@ -35,7 +35,7 @@ class ProductController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function store(RequestsProductRequest $request)
+    public function store(ProductRequest $request)
     {
         $product = $this->repository->create($request->validated());
         return new ProductResource($product);
@@ -53,7 +53,7 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(RequestsProductRequest $request, $id)
+    public function update(ProductRequest $request, $id)
     {
         $product = $this->repository->update($id, $request->validated());
         return new ProductResource($product);

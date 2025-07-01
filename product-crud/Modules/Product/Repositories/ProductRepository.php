@@ -17,31 +17,59 @@ class ProductRepository
 
     public function all()
     {
-        return $this->model->all();
+        try {
+            Log::info('Repository: Retrieving all products');
+            $products = $this->model->all();
+            Log::info('Repository: Found ' . $products->count() . ' products');
+            return $products;
+        } catch (\Exception $e) {
+            Log::error('Repository error in all method: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function find($id)
     {
-        return $this->model->findOrFail($id);
+        try {
+            return $this->model->findOrFail($id);
+        } catch (\Exception $e) {
+            Log::error('Repository error in find method: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function create(array $data)
     {
-        return $this->model->create($data);
+        try {
+            return $this->model->create($data);
+        } catch (\Exception $e) {
+            Log::error('Repository error in create method: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function update($id, array $data)
     {
-        $product = $this->find($id);
-        $product->update($data);
-        return $product;
+        try {
+            $product = $this->find($id);
+            $product->update($data);
+            return $product;
+        } catch (\Exception $e) {
+            Log::error('Repository error in update method: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function delete($id)
     {
-        $product = $this->find($id);
-        $this->deleteImage($product);
-        return $product->delete();
+        try {
+            $product = $this->find($id);
+            $this->deleteImage($product);
+            return $product->delete();
+        } catch (\Exception $e) {
+            Log::error('Repository error in delete method: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     private function deleteImage(Product $product)

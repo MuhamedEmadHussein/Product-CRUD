@@ -2,131 +2,74 @@
 
 namespace Modules\Product\Services;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
+use Modules\Product\Repositories\ProductRepository;
+use Modules\Product\Transformers\ProductResource;
 
 class ProductApiService
 {
-    protected $client;
-    protected $baseUrl;
+    protected $repository;
 
-    public function __construct()
+    public function __construct(ProductRepository $repository)
     {
-        $this->client = new Client();
-        $this->baseUrl = 'http://127.0.0.1:8000/api/products';
+        $this->repository = $repository;
     }
 
     public function getAll()
     {
         try {
-            Log::info('Fetching products from API: ' . $this->baseUrl);
-            $response = $this->client->get($this->baseUrl);
-            $data = json_decode($response->getBody(), true);
-            Log::info('API response received: ' . json_encode($data));
-            return $data['data'] ?? [];
-        } catch (RequestException $e) {
+            Log::info('Fetching products from repository');
+            $products = $this->repository->all();
+            Log::info('Products fetched from repository: ' . json_encode($products));
+            $productCollection = ProductResource::collection($products);
+            return $productCollection->resolve();
+        } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
-            // Return mock data as fallback
-            return $this->getMockProducts();
+            return [];
         }
     }
 
     public function get($id)
     {
         try {
-            $response = $this->client->get($this->baseUrl . '/' . $id, [
-                'timeout' => 5.0,
-            ]);
-            $data = json_decode($response->getBody(), true);
-            return $data['data'] ?? null;
-        } catch (RequestException $e) {
+            $product = $this->repository->find($id);
+            return (new ProductResource($product))->resolve();
+        } catch (\Exception $e) {
             Log::error('Error fetching product: ' . $e->getMessage());
-            // Return mock data as fallback
-            return $this->getMockProduct($id);
+            return null;
         }
     }
 
     public function create(array $data)
     {
         try {
-            $response = $this->client->post($this->baseUrl, [
-                'json' => $data,
-                'timeout' => 5.0,
-            ]);
-            return json_decode($response->getBody(), true)['data'] ?? null;
-        } catch (RequestException $e) {
+            $product = $this->repository->create($data);
+            return (new ProductResource($product))->resolve();
+        } catch (\Exception $e) {
             Log::error('Error creating product: ' . $e->getMessage());
-            // Return mock data as fallback
-            return $this->getMockProduct(rand(21, 100));
+            return null;
         }
     }
 
     public function update($id, array $data)
     {
         try {
-            $response = $this->client->put($this->baseUrl . '/' . $id, [
-                'json' => $data,
-                'timeout' => 5.0,
-            ]);
-            return json_decode($response->getBody(), true)['data'] ?? null;
-        } catch (RequestException $e) {
+            $product = $this->repository->update($id, $data);
+            return (new ProductResource($product))->resolve();
+        } catch (\Exception $e) {
             Log::error('Error updating product: ' . $e->getMessage());
-            // Return mock data as fallback
-            return array_merge($this->getMockProduct($id), $data);
+            return null;
         }
     }
 
     public function delete($id)
     {
         try {
-            $this->client->delete($this->baseUrl . '/' . $id, [
-                'timeout' => 5.0,
-            ]);
+            $this->repository->delete($id);
             return true;
-        } catch (RequestException $e) {
+        } catch (\Exception $e) {
             Log::error('Error deleting product: ' . $e->getMessage());
-            return true; // Return success even on error for better UX
+            return false;
         }
-    }
-    
-    /**
-     * Generate mock products for testing
-     */
-    private function getMockProducts()
-    {
-        $products = [];
-        for ($i = 1; $i <= 20; $i++) {
-            $products[] = [
-                'id' => $i,
-                'name' => 'Product ' . $i,
-                'description' => 'This is a description for product ' . $i,
-                'price' => rand(10, 1000) / 10,
-                'stock' => rand(0, 100),
-                'image' => 'https://picsum.photos/id/' . ($i + 10) . '/300/200',
-                'is_active' => rand(0, 1) == 1,
-                'created_at' => now()->toDateTimeString(),
-                'updated_at' => now()->toDateTimeString(),
-            ];
-        }
-        return $products;
-    }
-    
-    /**
-     * Generate a mock product for testing
-     */
-    private function getMockProduct($id)
-    {
-        return [
-            'id' => $id,
-            'name' => 'Product ' . $id,
-            'description' => 'This is a description for product ' . $id,
-            'price' => rand(10, 1000) / 10,
-            'stock' => rand(0, 100),
-            'image' => 'https://picsum.photos/id/' . ($id + 10) . '/300/200',
-            'is_active' => rand(0, 1) == 1,
-            'created_at' => now()->toDateTimeString(),
-            'updated_at' => now()->toDateTimeString(),
-        ];
     }
 }

@@ -1,5 +1,5 @@
-@extends('layouts.app')
+@extends('product::components.layouts.master')
 
 @section('content')
-    <livewire:product-list />
+    <livewire:product::product-list />
 @endsection

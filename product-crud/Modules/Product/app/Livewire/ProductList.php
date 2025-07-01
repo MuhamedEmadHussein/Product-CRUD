@@ -3,16 +3,22 @@
 namespace Modules\Product\App\Livewire;
 
 use Livewire\Component;
-use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use Modules\Product\Services\ProductApiService;
 
 class ProductList extends Component
 {
     public $products = [];
-    public $name, $description, $price, $stock, $image, $is_active = true;
+    public $name = '';
+    public $description = '';
+    public $price = '';
+    public $stock = '';
+    public $image = '';
+    public $is_active = true;
     public $selectedProductId = null;
     public $isEditing = false;
+    public $showDeleteConfirmation = false;
+    public $deleteProductId = null;
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -38,16 +44,19 @@ class ProductList extends Component
     public function fetchProducts()
     {
         try {
+            Log::info('Fetching products from repository');
             $this->products = $this->productApiService->getAll();
-            $this->dispatch('success', 'Products loaded successfully');
+            Log::info('Products fetched: ' . count($this->products));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
-            $this->dispatch('error', 'Failed to fetch products');
+            $this->dispatch('error', ['text' => 'Failed to fetch products']);
         }
     }
 
     public function createProduct()
     {
+        Log::info('Creating product: ' . $this->name);
+        
         $this->validate();
 
         try {
@@ -59,19 +68,25 @@ class ProductList extends Component
                 'image' => $this->image,
                 'is_active' => $this->is_active,
             ]);
+            
+            Log::info('Product created successfully');
             $this->fetchProducts();
             $this->resetInputFields();
-            $this->dispatch('success', 'Product created successfully');
+            $this->dispatch('success', ['text' => 'Product created successfully']);
         } catch (\Exception $e) {
             Log::error('Error creating product: ' . $e->getMessage());
-            $this->dispatch('error', 'Failed to create product');
+            $this->dispatch('error', ['text' => 'Failed to create product: ' . $e->getMessage()]);
         }
     }
 
     public function editProduct($id)
     {
+        Log::info('Editing product with ID: ' . $id);
+        
         try {
             $product = $this->productApiService->get($id);
+            Log::info('Product data fetched for editing: ' . json_encode($product));
+            
             $this->selectedProductId = $product['id'];
             $this->name = $product['name'];
             $this->description = $product['description'];
@@ -80,14 +95,18 @@ class ProductList extends Component
             $this->image = $product['image'];
             $this->is_active = $product['is_active'];
             $this->isEditing = true;
+            
+            Log::info('Product loaded for editing: ' . $this->name);
         } catch (\Exception $e) {
             Log::error('Error fetching product for edit: ' . $e->getMessage());
-            $this->dispatch('error', 'Failed to load product');
+            $this->dispatch('error', ['text' => 'Failed to load product: ' . $e->getMessage()]);
         }
     }
 
     public function updateProduct()
     {
+        Log::info('Updating product ID: ' . $this->selectedProductId);
+        
         $this->validate();
 
         try {
@@ -99,30 +118,52 @@ class ProductList extends Component
                 'image' => $this->image,
                 'is_active' => $this->is_active,
             ]);
+            
+            Log::info('Product updated successfully');
             $this->fetchProducts();
             $this->resetInputFields();
-            $this->isEditing = false;
-            $this->dispatch('success', 'Product updated successfully');
+            $this->dispatch('success', ['text' => 'Product updated successfully']);
         } catch (\Exception $e) {
             Log::error('Error updating product: ' . $e->getMessage());
-            $this->dispatch('error', 'Failed to update product');
+            $this->dispatch('error', ['text' => 'Failed to update product: ' . $e->getMessage()]);
         }
     }
 
-    public function deleteProduct($id)
+    public function confirmDelete($id)
     {
+        Log::info('Confirming delete for product ID: ' . $id);
+        $this->deleteProductId = $id;
+        $this->showDeleteConfirmation = true;
+    }
+
+    public function cancelDelete()
+    {
+        Log::info('Delete cancelled');
+        $this->deleteProductId = null;
+        $this->showDeleteConfirmation = false;
+    }
+
+    public function deleteProduct()
+    {
+        Log::info('Deleting product ID: ' . $this->deleteProductId);
+        
         try {
-            $this->productApiService->delete($id);
+            $this->productApiService->delete($this->deleteProductId);
+            Log::info('Product deleted successfully');
+            
             $this->fetchProducts();
-            $this->dispatch('success', 'Product deleted successfully');
+            $this->showDeleteConfirmation = false;
+            $this->deleteProductId = null;
+            $this->dispatch('success', ['text' => 'Product deleted successfully']);
         } catch (\Exception $e) {
             Log::error('Error deleting product: ' . $e->getMessage());
-            $this->dispatch('error', 'Failed to delete product');
+            $this->dispatch('error', ['text' => 'Failed to delete product: ' . $e->getMessage()]);
         }
     }
 
     public function resetInputFields()
     {
+        Log::info('Resetting input fields');
         $this->name = '';
         $this->description = '';
         $this->price = '';
