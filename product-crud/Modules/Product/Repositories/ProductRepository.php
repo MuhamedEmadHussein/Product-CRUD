@@ -2,30 +2,32 @@
 
 namespace Modules\Product\Repositories;
 
-use Modules\Product\Models\Product;
+use Modules\Product\App\Models\Product;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+
 class ProductRepository
 {
-    protected $product;
+    protected $model;
 
-    public function __construct(Product $product)
+    public function __construct(Product $model)
     {
-        $this->product = $product;
+        $this->model = $model;
     }
 
     public function all()
     {
-        return $this->product->all();
+        return $this->model->all();
     }
 
     public function find($id)
     {
-        return $this->product->findOrFail($id);
+        return $this->model->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return $this->product->create($data);
+        return $this->model->create($data);
     }
 
     public function update($id, array $data)
@@ -39,7 +41,7 @@ class ProductRepository
     {
         $product = $this->find($id);
         $this->deleteImage($product);
-        $product->delete();
+        return $product->delete();
     }
 
     private function deleteImage(Product $product)

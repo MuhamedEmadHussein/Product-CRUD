@@ -4,10 +4,12 @@ namespace Modules\Product\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Modules\Product\App\Http\Requests\ProductRequest;
 use Modules\Product\Repositories\ProductRepository;
 use Modules\Product\Transformers\ProductResource;
 use Modules\Product\Http\Requests\ProductRequest as RequestsProductRequest;
+
 class ProductController extends Controller
 {
     protected $repository;
@@ -21,8 +23,13 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = $this->repository->all();
-        return ProductResource::collection($products);
+        try {
+            $products = $this->repository->all();
+            return ProductResource::collection($products);
+        } catch (\Exception $e) {
+            Log::error('Error in index method: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

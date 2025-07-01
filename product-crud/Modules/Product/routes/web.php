@@ -1,8 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Product\Http\Controllers\ProductController;
+use Modules\Product\Livewire\ProductList;
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('products', ProductController::class)->names('product');
+
+Route::prefix('products')->group(function() {
+    Route::get('/', function() {
+        return view('product::index');
+    })->name('products.index');
 });
