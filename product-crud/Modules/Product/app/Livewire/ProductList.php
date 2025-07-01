@@ -28,16 +28,41 @@ class ProductList extends Component
         'image' => 'required|string',
         'is_active' => 'boolean',
     ];
+    
+    // Add messages for validation errors
+    protected $messages = [
+        'name.required' => 'The product name is required.',
+        'description.required' => 'The product description is required.',
+        'price.required' => 'The product price is required.',
+        'price.numeric' => 'The product price must be a number.',
+        'stock.required' => 'The product stock is required.',
+        'stock.integer' => 'The product stock must be an integer.',
+        'image.required' => 'The product image URL is required.',
+    ];
 
     protected $productApiService;
 
     public function boot(ProductApiService $productApiService)
     {
         $this->productApiService = $productApiService;
+        Log::info('ProductList component booted with namespace: ' . __NAMESPACE__);
+        Log::info('ProductList class: ' . get_class($this));
+        Log::info('ProductApiService class: ' . get_class($productApiService));
+    }
+    
+    public function hydrate()
+    {
+        Log::info('ProductList component hydrated');
+    }
+    
+    public function dehydrate()
+    {
+        Log::info('ProductList component dehydrated');
     }
 
     public function mount()
     {
+        Log::info('ProductList component mounted');
         $this->fetchProducts();
     }
 
@@ -47,20 +72,39 @@ class ProductList extends Component
             Log::info('Fetching products from repository');
             $this->products = $this->productApiService->getAll();
             Log::info('Products fetched: ' . count($this->products));
+            Log::info('Products data: ' . json_encode($this->products));
         } catch (\Exception $e) {
             Log::error('Error fetching products: ' . $e->getMessage());
-            $this->dispatch('error', ['text' => 'Failed to fetch products']);
+            $this->dispatch('error', ['text' => 'Failed to fetch products: ' . $e->getMessage()]);
         }
     }
 
     public function createProduct()
     {
-        Log::info('Creating product: ' . $this->name);
+        Log::info('createProduct method called with request data: ' . json_encode(request()->all()));
+        Log::info('Product data: ' . json_encode([
+            'name' => $this->name,
+            'description' => $this->description,
+            'price' => $this->price,
+            'stock' => $this->stock,
+            'image' => $this->image,
+            'is_active' => $this->is_active,
+        ]));
         
-        $this->validate();
-
         try {
-            $this->productApiService->create([
+            // Validate the input fields
+            Log::info('Validating input fields');
+            $validatedData = $this->validate();
+            Log::info('Validation passed: ' . json_encode($validatedData));
+            
+            // Create the product using direct repository call
+            Log::info('Calling repository directly');
+            
+            // Get the repository from the service
+            $repository = app(\Modules\Product\Repositories\ProductRepository::class);
+            
+            // Create the product
+            $product = $repository->create([
                 'name' => $this->name,
                 'description' => $this->description,
                 'price' => $this->price,
@@ -69,13 +113,20 @@ class ProductList extends Component
                 'is_active' => $this->is_active,
             ]);
             
-            Log::info('Product created successfully');
+            Log::info('Product created successfully via repository: ' . json_encode($product));
             $this->fetchProducts();
             $this->resetInputFields();
             $this->dispatch('success', ['text' => 'Product created successfully']);
+            Log::info('Success event dispatched');
+            
+            return $product;
         } catch (\Exception $e) {
             Log::error('Error creating product: ' . $e->getMessage());
+            Log::error('Error trace: ' . $e->getTraceAsString());
             $this->dispatch('error', ['text' => 'Failed to create product: ' . $e->getMessage()]);
+            Log::error('Error event dispatched');
+            
+            return null;
         }
     }
 
@@ -107,9 +158,21 @@ class ProductList extends Component
     {
         Log::info('Updating product ID: ' . $this->selectedProductId);
         
-        $this->validate();
-
         try {
+            // Validate the input fields
+            Log::info('Validating input fields for update');
+            $validatedData = $this->validate();
+            Log::info('Validation passed for update: ' . json_encode($validatedData));
+            
+            Log::info('Updating product with data: ' . json_encode([
+                'name' => $this->name,
+                'description' => $this->description,
+                'price' => $this->price,
+                'stock' => $this->stock,
+                'image' => $this->image,
+                'is_active' => $this->is_active,
+            ]));
+            
             $this->productApiService->update($this->selectedProductId, [
                 'name' => $this->name,
                 'description' => $this->description,
@@ -164,18 +227,16 @@ class ProductList extends Component
     public function resetInputFields()
     {
         Log::info('Resetting input fields');
-        $this->name = '';
-        $this->description = '';
-        $this->price = '';
-        $this->stock = '';
-        $this->image = '';
+        $this->reset(['name', 'description', 'price', 'stock', 'image']);
         $this->is_active = true;
         $this->selectedProductId = null;
         $this->isEditing = false;
+        Log::info('Input fields reset completed');
     }
 
     public function render()
     {
+        Log::info('Rendering ProductList component');
         return view('product::livewire.product-list');
     }
 }

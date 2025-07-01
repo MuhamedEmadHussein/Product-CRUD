@@ -5,19 +5,25 @@
         type: '' 
     }
 }" 
-     x-init="$wire.on('success', (message) => { 
+     x-init="
+             console.log('Alpine initialized');
+             console.log('Livewire component ID:', $wire.id);
+             $wire.on('success', (message) => { 
+                console.log('Success event received', message);
                 toast.show = true; 
                 toast.message = message.text; 
                 toast.type = 'success'; 
                 setTimeout(() => toast.show = false, 3000); 
              });
              $wire.on('error', (message) => { 
+                console.log('Error event received', message);
                 toast.show = true; 
                 toast.message = message.text; 
                 toast.type = 'error'; 
                 setTimeout(() => toast.show = false, 3000); 
              });"
-     class="container mx-auto p-6 bg-gray-100 min-h-screen">
+     @submit.prevent="console.log('Form submitted');"
+     class="container mx-auto p-6 bg-gray-100 min-h-screen" id="product-list-component" wire:id="{{ $_instance->getId() }}">
     
     <!-- Toast Notification -->
     <div x-show="toast.show" 
@@ -32,53 +38,152 @@
     <!-- Product Form -->
     <div class="bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 class="text-2xl font-semibold mb-4">{{ $isEditing ? 'Edit Product' : 'Add New Product' }}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input wire:model.defer="name" type="text" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Product Name">
-                @error('name') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+        <form id="product-form" wire:submit.prevent="{{ $isEditing ? 'updateProduct' : 'createProduct' }}" x-on:submit="console.log('Form submitted via Alpine')">
+                @csrf
+                <div x-data="{formSubmitted: false}" x-init="
+                    $watch('formSubmitted', value => {
+                        if (value) {
+                            console.log('Form submitted via watcher');
+                            $wire.{{ $isEditing ? 'updateProduct' : 'createProduct' }}();
+                        }
+                    })">
+                <button type="button" x-on:click="formSubmitted = true; console.log('Manual submission button clicked')" class="hidden manual-submit-btn">Manual Submit</button>
+                
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const form = document.getElementById('product-form');
+                        console.log('Form element found:', form);
+                        
+                        form.addEventListener('submit', function(e) {
+                            console.log('Form submit event captured');
+                            console.log('Form action:', this.action);
+                            console.log('Form method:', this.method);
+                            
+                            // Get all form data
+                            const formData = new FormData(this);
+                            for (let pair of formData.entries()) {
+                                console.log(pair[0] + ': ' + pair[1]);
+                            }
+                        });
+                    });
+                </script>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input wire:model="name" type="text" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Product Name">
+                    @error('name') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                    <input wire:model="price" type="number" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Price">
+                    @error('price') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                    <input wire:model="stock" type="number" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Stock">
+                    @error('stock') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                    <input wire:model="image" type="text" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Image URL">
+                    @error('image') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea wire:model="description" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Description" rows="4"></textarea>
+                    @error('description') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Active</label>
+                    <input wire:model="is_active" type="checkbox" class="h-5 w-5 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
+                    @error('is_active') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                <input wire:model.defer="price" type="number" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Price">
-                @error('price') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+            <div class="mt-6 flex space-x-4">
+                @if($isEditing)
+                    <button type="submit" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition">
+                        <span wire:loading.remove wire:target="updateProduct">Update Product</span>
+                        <span wire:loading wire:target="updateProduct">Processing...</span>
+                    </button>
+                    <button type="button" wire:click="resetInputFields" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">Cancel</button>
+                @else
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition" id="normal-submit-btn">
+                        <span wire:loading.remove wire:target="createProduct">Add Product</span>
+                        <span wire:loading wire:target="createProduct">Processing...</span>
+                    </button>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            console.log('DOMContentLoaded event fired');
+                            document.getElementById('normal-submit-btn').addEventListener('click', function(e) {
+                                console.log('Normal submit button clicked');
+                                // Prevent the default form submission
+                                e.preventDefault();
+                                // Log form data
+                                const form = this.closest('form');
+                                const formData = new FormData(form);
+                                for (let pair of formData.entries()) {
+                                    console.log(pair[0] + ': ' + pair[1]);
+                                }
+                            });
+                        });
+                    </script>
+                    <!-- Direct API Form -->
+                    <button type="button" id="direct-api-btn" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition">Direct API Add</button>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            document.getElementById('direct-api-btn').addEventListener('click', function() {
+                                console.log('Direct API button clicked');
+                                
+                                // Get form data
+                                const name = document.querySelector('[wire\\:model="name"]').value;
+                                const description = document.querySelector('[wire\\:model="description"]').value;
+                                const price = document.querySelector('[wire\\:model="price"]').value;
+                                const stock = document.querySelector('[wire\\:model="stock"]').value;
+                                const image = document.querySelector('[wire\\:model="image"]').value;
+                                const is_active = document.querySelector('[wire\\:model="is_active"]').checked;
+                                
+                                // Create payload
+                                const payload = {
+                                    name: name,
+                                    description: description,
+                                    price: price,
+                                    stock: stock,
+                                    image: image,
+                                    is_active: is_active
+                                };
+                                
+                                console.log('API payload:', payload);
+                                
+                                // Send API request
+                                fetch('/api/products', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                    },
+                                    body: JSON.stringify(payload)
+                                })
+                                .then(response => {
+                                    console.log('API response status:', response.status);
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log('API response data:', data);
+                                    alert('Product created via API: ' + data.data.name);
+                                    // Refresh the page to show the new product
+                                    window.location.reload();
+                                })
+                                .catch(error => {
+                                    console.error('API error:', error);
+                                    alert('Error creating product via API: ' + error.message);
+                                });
+                            });
+                        });
+                    </script>
+                @endif
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-                <input wire:model.defer="stock" type="number" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Stock">
-                @error('stock') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input wire:model.defer="image" type="text" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Image URL">
-                @error('image') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
-            </div>
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea wire:model.defer="description" class="block w-full border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="Description" rows="4"></textarea>
-                @error('description') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Active</label>
-                <input wire:model.defer="is_active" type="checkbox" class="h-5 w-5 text-blue-500 focus:ring-blue-500 border-gray-300 rounded">
-                @error('is_active') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
-            </div>
-        </div>
-        <div class="mt-6 flex space-x-4">
-            @if($isEditing)
-                <button type="button" wire:click.prevent="updateProduct" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition">
-                    <span wire:loading.remove wire:target="updateProduct">Update Product</span>
-                    <span wire:loading wire:target="updateProduct">Processing...</span>
-                </button>
-                <button type="button" wire:click.prevent="resetInputFields" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">Cancel</button>
-            @else
-                <button type="button" wire:click.prevent="createProduct" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">
-                    <span wire:loading.remove wire:target="createProduct">Add Product</span>
-                    <span wire:loading wire:target="createProduct">Processing...</span>
-                </button>
-                <button type="button" wire:click.prevent="resetInputFields" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">Reset</button>
-            @endif
-        </div>
+            </div> <!-- Close the formSubmitted div -->
+        </form>
     </div>
 
     <!-- Delete Confirmation -->
@@ -129,4 +234,4 @@
             </div>
         @endforelse
     </div>
-</div> 
+</div>

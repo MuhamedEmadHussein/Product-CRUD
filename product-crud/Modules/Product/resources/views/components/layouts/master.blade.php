@@ -17,12 +17,26 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Alpine.js -->
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+        <!-- Livewire Styles -->
+        @livewireStyles
+
         {{-- Vite CSS --}}
         {{-- {{ module_vite('build-product', 'resources/assets/sass/app.scss') }} --}}
     </head>
 
     <body>
-        {{ $slot }}
+        {{ $slot ?? '' }}
+        
+        @yield('content')
+
+        <!-- Livewire Scripts -->
+        @livewireScripts
 
         {{-- Vite JS --}}
         {{-- {{ module_vite('build-product', 'resources/assets/js/app.js') }} --}}
