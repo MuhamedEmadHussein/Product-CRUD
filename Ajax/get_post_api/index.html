@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GET and POST API Example</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+</head>
+<body>
+    <h2>GET Request (Fetch Names)</h2>
+    <button id="fetchNames">Get Names</button>
+    <ul id="nameList"></ul>
+
+    <h2>POST Request (Suggest Names)</h2>
+    <input type="text" id="nameInput" placeholder="Start typing a name...">
+    <p id="suggestions"></p>
+
+    <script>
+        $(document).ready(function() {
+            // GET request to fetch all names
+            $("#fetchNames").click(function() {
+                $.get("api.php", function(data) {
+                    let names = data.names.map(name => `<li>${name}</li>`).join("");
+                    $("#nameList").html(names);
+                });
+            });
+
+            // POST request for name suggestions
+            $("#nameInput").keyup(function() {
+                let name = $(this).val().trim();
+                if (name.length > 0) {
+                    $.ajax({
+                        url: "api.php",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify({ suggesstion: name }),
+                        success: function(response) {
+                            $("#suggestions").html(response.suggestions.join(", "));
+                        }
+                    });
+                } else {
+                    $("#suggestions").html("");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
